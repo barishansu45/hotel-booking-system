@@ -1,0 +1,35 @@
+spring:
+  application:
+    name: notification-service
+  
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+  rabbitmq:
+    addresses: ${RABBITMQ_URL:amqp://guest:guest@localhost:5672}
+
+server:
+  port: ${SERVER_PORT:8085}
+  servlet:
+    context-path: /api/v1
+
+app:
+  hotel-service:
+    url: ${HOTEL_SERVICE_URL:http://localhost:8081/api/v1}
+  capacity:
+    threshold-percentage: 20
+    lookahead-days: 30
+  alerts:
+    admin-email: ${ADMIN_ALERT_EMAIL:}
+    demo-confirmation-email: ${BOOKING_DEMO_EMAIL:}
+  queue:
+    new-reservations: new-reservations

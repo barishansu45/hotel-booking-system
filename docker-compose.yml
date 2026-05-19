@@ -1,0 +1,140 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: hoteldb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  # MongoDB for Comments
+  mongodb:
+    image: mongo:7
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+  # Hotel Service
+  hotel-service:
+    build: ./backend/hotel-service
+    ports:
+      - "8081:8081"
+    environment:
+      DATABASE_URL: jdbc:postgresql://postgres:5432/hoteldb
+      DATABASE_USERNAME: postgres
+      DATABASE_PASSWORD: postgres
+    depends_on:
+      - postgres
+
+  # Search Service
+  search-service:
+    build: ./backend/search-service
+    ports:
+      - "8082:8082"
+    environment:
+      HOTEL_SERVICE_URL: http://hotel-service:8081/api/v1
+      REDIS_HOST: redis
+    depends_on:
+      - redis
+      - hotel-service
+
+  # Booking Service
+  booking-service:
+    build: ./backend/booking-service
+    ports:
+      - "8083:8083"
+    environment:
+      DATABASE_URL: jdbc:postgresql://postgres:5432/hoteldb
+      DATABASE_USERNAME: postgres
+      DATABASE_PASSWORD: postgres
+      HOTEL_SERVICE_URL: http://hotel-service:8081/api/v1
+      NOTIFICATION_WEBHOOK_URL: http://notification-service:8085/api/v1/notifications/inbound/booking
+    depends_on:
+      - postgres
+      - hotel-service
+      - notification-service
+
+  # Notification Service (PDF: nightly capacity + reservation events)
+  notification-service:
+    build: ./backend/notification-service
+    ports:
+      - "8085:8085"
+    environment:
+      HOTEL_SERVICE_URL: http://hotel-service:8081/api/v1
+    depends_on:
+      - hotel-service
+
+  # Comment Service
+  comment-service:
+    build: ./backend/comment-service
+    ports:
+      - "8084:8084"
+    environment:
+      COSMOS_DB_URI: mongodb://mongodb:27017
+      COSMOS_DB_NAME: hoteldb
+      ALLOWED_ORIGINS: http://localhost:3000
+    depends_on:
+      - mongodb
+
+  # AI Agent Service
+  ai-agent-service:
+    build: ./backend/ai-agent-service
+    ports:
+      - "8086:8086"
+    environment:
+      HOTEL_SERVICE_URL: http://hotel-service:8081/api/v1
+      SEARCH_SERVICE_URL: http://search-service:8082/api/v1
+      BOOKING_SERVICE_URL: http://booking-service:8083/api/v1
+    depends_on:
+      - hotel-service
+      - search-service
+      - booking-service
+
+  # API Gateway
+  api-gateway:
+    build: ./backend/api-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      HOTEL_SERVICE_URL: http://hotel-service:8081
+      SEARCH_SERVICE_URL: http://search-service:8082
+      BOOKING_SERVICE_URL: http://booking-service:8083
+      COMMENT_SERVICE_URL: http://comment-service:8084
+      AI_AGENT_SERVICE_URL: http://ai-agent-service:8086
+    depends_on:
+      - hotel-service
+      - search-service
+      - booking-service
+      - comment-service
+      - ai-agent-service
+
+  # Frontend
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:8080/api/v1
+        NEXT_PUBLIC_AI_API_URL: http://localhost:8080/api/v1/ai
+        # Supabase keys are already in .env.local and baked in at build time.
+        # To override: docker build --build-arg NEXT_PUBLIC_SUPABASE_URL=...
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api-gateway
+
+volumes:
+  postgres_data:
+  mongo_data:

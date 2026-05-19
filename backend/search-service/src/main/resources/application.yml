@@ -1,0 +1,45 @@
+spring:
+  application:
+    name: search-service
+  
+  # Disable JPA/Datasource (not needed for search service)
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
+      - org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration
+  
+  data:
+    redis:
+      url: ${REDIS_URL:redis://localhost:6379}
+      timeout: 60000ms
+      ssl:
+        enabled: ${REDIS_SSL:false}
+  
+  cache:
+    type: redis
+    redis:
+      time-to-live: 3600000
+
+server:
+  port: ${SERVER_PORT:8082}
+  servlet:
+    context-path: /api/v1
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+
+app:
+  cors:
+    allowed-origins: ${ALLOWED_ORIGINS:http://localhost:3000,http://localhost:3001,http://localhost:3002,http://localhost:3003}
+  discount:
+    logged-in-percentage: 15
+  hotel-service:
+    url: ${HOTEL_SERVICE_URL:http://localhost:8081/api/v1}
+  search:
+    hotel-fetch-size: ${SEARCH_HOTEL_FETCH_SIZE:300}
+  supabase:
+    url: ${SUPABASE_URL:https://nqpknjbjcphiiusirzlg.supabase.co}
+    jwt-secret: ${SUPABASE_JWT_SECRET:}

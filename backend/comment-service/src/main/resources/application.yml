@@ -1,0 +1,17 @@
+spring:
+  application:
+    name: comment-service
+  
+  data:
+    mongodb:
+      uri: ${COSMOS_DB_URI:mongodb://localhost:27017/hoteldb}
+      database: ${COSMOS_DB_NAME:hoteldb}
+
+server:
+  port: ${SERVER_PORT:8084}
+  servlet:
+    context-path: /api/v1
+
+app:
+  cors:
+    allowed-origins: ${ALLOWED_ORIGINS:http://localhost:3000,http://localhost:3001,http://localhost:3002,http://localhost:3003}
