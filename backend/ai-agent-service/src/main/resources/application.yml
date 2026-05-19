@@ -12,7 +12,8 @@ app:
     allowed-origins: ${ALLOWED_ORIGINS:http://localhost:3000,http://localhost:3001,http://localhost:3002,http://localhost:3003}
   openai:
     api-key: ${OPENAI_API_KEY:}
-    model: ${OPENAI_MODEL:gpt-3.5-turbo}
+    model: ${OPENAI_MODEL:llama3-8b-8192}
+    base-url: ${OPENAI_BASE_URL:https://api.groq.com/openai/v1}
   services:
     search-service-url: ${SEARCH_SERVICE_URL:http://localhost:8082/api/v1}
     booking-service-url: ${BOOKING_SERVICE_URL:http://localhost:8083/api/v1}

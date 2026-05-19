@@ -59,6 +59,9 @@ public class AiAgentService {
     @Value("${app.openai.model}")
     private String model;
 
+    @Value("${app.openai.base-url}")
+    private String openaiBaseUrl;
+
     @Value("${app.services.search-service-url}")
     private String searchServiceUrl;
 
@@ -464,7 +467,7 @@ public class AiAgentService {
     private String callOpenAIRaw(String systemContent, String userMessage) {
         try {
             WebClient webClient = webClientBuilder
-                    .baseUrl("https://api.openai.com/v1")
+                    .baseUrl(openaiBaseUrl)
                     .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + openaiApiKey)
                     .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                     .build();
@@ -568,7 +571,7 @@ public class AiAgentService {
     private String callOpenAI(String systemPrompt, String userMessage) {
         try {
             WebClient webClient = webClientBuilder
-                    .baseUrl("https://api.openai.com/v1")
+                    .baseUrl(openaiBaseUrl)
                     .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + openaiApiKey)
                     .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                     .build();
