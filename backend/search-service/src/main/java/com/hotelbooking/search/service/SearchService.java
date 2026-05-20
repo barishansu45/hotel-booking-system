@@ -38,7 +38,7 @@ public class SearchService {
     private static final String HOTEL_CACHE_PREFIX = "hotel:";
     private static final Duration CACHE_TTL = Duration.ofHours(6);
     // Timeout for each individual HTTP call to hotel-service
-    private static final Duration HTTP_TIMEOUT = Duration.ofSeconds(10);
+    private static final Duration HTTP_TIMEOUT = Duration.ofSeconds(30);
     // Max parallel room-fetch calls at once
     private static final int ROOM_FETCH_CONCURRENCY = 10;
 
@@ -60,41 +60,14 @@ public class SearchService {
     }
 
     public List<HotelSearchResult> searchHotels(SearchRequest request, boolean isLoggedIn) {
-        String destination = request != null ? request.getDestination() : "null";
+        String destination = request != null ? request.getDestination() : null;
         log.info("=== searchHotels START === destination={}, isLoggedIn={}", destination, isLoggedIn);
 
         try {
             WebClient webClient = webClientBuilder.baseUrl(hotelServiceUrl).build();
             log.info("Calling hotel-service at: {}/hotels?page=0&size={}", hotelServiceUrl, hotelFetchSize);
 
-            List<Map<String, Object>> allHotels = webClient.get()
-                .uri(uriBuilder -> uriBuilder
-                    .path("/hotels")
-                    .queryParam("page", 0)
-                    .queryParam("size", hotelFetchSize)
-                    .build())
-                .retrieve()
-                .bodyToMono(Map.class)
-                .timeout(HTTP_TIMEOUT)
-                .map(response -> {
-                    log.info("Hotel-service responded OK");
-                    Object data = response.get("data");
-                    if (data instanceof Map) {
-                        Object content = ((Map<?, ?>) data).get("content");
-                        if (content instanceof List) {
-                            List<Map<String, Object>> list = (List<Map<String, Object>>) content;
-                            log.info("Parsed {} hotels from response", list.size());
-                            return list;
-                        }
-                    }
-                    log.warn("Unexpected response structure: keys={}", response.keySet());
-                    return (List<Map<String, Object>>) List.<Map<String, Object>>of();
-                })
-                .onErrorResume(e -> {
-                    log.error("Failed to fetch hotels from hotel-service: {} - {}", e.getClass().getSimpleName(), e.getMessage());
-                    return Mono.just(List.of());
-                })
-                .block();
+            List<Map<String, Object>> allHotels = fetchHotelsFromService(webClient, destination);
 
             if (allHotels == null || allHotels.isEmpty()) {
                 log.warn("No hotels returned from hotel-service");
@@ -125,6 +98,81 @@ public class SearchService {
             log.error("Error in searchHotels: {} - {}", e.getClass().getSimpleName(), e.getMessage(), e);
             return List.of();
         }
+    }
+
+    /**
+     * Fetches hotels from hotel-service. Tries city-filtered query first (faster),
+     * then falls back to unfiltered paginated fetch.
+     */
+    private List<Map<String, Object>> fetchHotelsFromService(WebClient webClient, String destination) {
+        // Try city filter first — much faster than fetching all and filtering in memory
+        if (destination != null && !destination.trim().isEmpty()) {
+            List<Map<String, Object>> cityResults = webClient.get()
+                .uri(uriBuilder -> uriBuilder
+                    .path("/hotels")
+                    .queryParam("page", 0)
+                    .queryParam("size", hotelFetchSize)
+                    .queryParam("city", destination)
+                    .build())
+                .retrieve()
+                .bodyToMono(Map.class)
+                .timeout(HTTP_TIMEOUT)
+                .map(r -> extractContent(r))
+                .onErrorResume(e -> {
+                    log.warn("City-filtered hotel fetch failed ({}), will try unfiltered", e.getMessage());
+                    return Mono.just(List.of());
+                })
+                .block();
+
+            // If we got results with city filter, use them
+            if (cityResults != null && !cityResults.isEmpty()) {
+                log.info("City-filtered fetch returned {} hotels for '{}'", cityResults.size(), destination);
+                return cityResults;
+            }
+            log.info("City filter returned 0 results for '{}', falling back to full fetch", destination);
+        }
+
+        // Fallback: fetch first page without filter, then match in memory
+        List<Map<String, Object>> allHotels = webClient.get()
+            .uri(uriBuilder -> uriBuilder
+                .path("/hotels")
+                .queryParam("page", 0)
+                .queryParam("size", hotelFetchSize)
+                .build())
+            .retrieve()
+            .bodyToMono(Map.class)
+            .timeout(HTTP_TIMEOUT)
+            .map(r -> extractContent(r))
+            .onErrorResume(e -> {
+                log.error("Hotel-service fetch failed: {} - {}", e.getClass().getSimpleName(), e.getMessage());
+                return Mono.just(List.of());
+            })
+            .block();
+
+        if (allHotels != null) {
+            log.info("Unfiltered fetch returned {} hotels", allHotels.size());
+        }
+        return allHotels != null ? allHotels : List.of();
+    }
+
+    private List<Map<String, Object>> extractContent(Map<?, ?> response) {
+        Object data = response.get("data");
+        if (data instanceof Map) {
+            Object content = ((Map<?, ?>) data).get("content");
+            if (content instanceof List) {
+                List<Map<String, Object>> list = (List<Map<String, Object>>) content;
+                log.info("Hotel-service responded: {} hotels", list.size());
+                return list;
+            }
+        }
+        // Maybe data is directly a list (non-paginated response)
+        if (data instanceof List) {
+            List<Map<String, Object>> list = (List<Map<String, Object>>) data;
+            log.info("Hotel-service responded (list): {} hotels", list.size());
+            return list;
+        }
+        log.warn("Unexpected hotel-service response structure, keys={}", response.keySet());
+        return List.of();
     }
 
     /**
