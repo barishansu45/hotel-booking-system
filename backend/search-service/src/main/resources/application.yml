@@ -33,11 +33,11 @@ management:
 
 app:
   cors:
-    allowed-origins: ${ALLOWED_ORIGINS:http://localhost:3000,http://localhost:3001,http://localhost:3002,http://localhost:3003}
+    allowed-origins: ${ALLOWED_ORIGINS:https://hotel-booking-system-production-1eab.up.railway.app}
   discount:
     logged-in-percentage: 15
   hotel-service:
-    url: ${HOTEL_SERVICE_URL:http://localhost:8081/api/v1}
+    url: ${HOTEL_SERVICE_URL:https://hotel-booking-system-production-b701.up.railway.app/api/v1}
   search:
     hotel-fetch-size: ${SEARCH_HOTEL_FETCH_SIZE:300}
   supabase:
