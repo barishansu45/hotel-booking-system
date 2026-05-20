@@ -4,8 +4,8 @@ import com.hotelbooking.search.dto.HotelSearchResult;
 import com.hotelbooking.search.dto.SearchRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -45,11 +45,20 @@ public class SearchService {
     @Value("${app.search.hotel-fetch-size:300}")
     private int hotelFetchSize;
 
-    @Cacheable(
-        value = "hotelSearches",
-        key = "#request.destination + '-' + #request.checkInDate + '-' + #request.checkOutDate + '-' + #request.guests + '-' + #isLoggedIn",
-        unless = "#result == null || #result.isEmpty()"
-    )
+    @PostConstruct
+    public void clearStaleCache() {
+        try {
+            // Clear all search caches on startup to avoid stale data
+            Set<String> keys = redisTemplate.keys("hotelSearches*");
+            if (keys != null && !keys.isEmpty()) {
+                redisTemplate.delete(keys);
+                log.info("Cleared {} stale search cache entries on startup", keys.size());
+            }
+        } catch (Exception e) {
+            log.warn("Could not clear cache on startup: {}", e.getMessage());
+        }
+    }
+
     public List<HotelSearchResult> searchHotels(SearchRequest request, boolean isLoggedIn) {
         log.info("Searching hotels for destination: {} (logged in: {})", request.getDestination(), isLoggedIn);
 
