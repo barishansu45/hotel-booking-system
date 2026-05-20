@@ -13,7 +13,6 @@ export default function RegisterPage() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState(false);
 
   const validateForm = (): string | null => {
     if (!fullName.trim()) return 'Please enter your full name.';
@@ -52,7 +51,7 @@ export default function RegisterPage() {
         setError(signUpError.message);
       }
     } else {
-      setSuccess(true);
+      router.push('/login');
     }
   };
 
@@ -70,22 +69,6 @@ export default function RegisterPage() {
           </div>
         )}
 
-        {success && (
-          <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg text-green-700">
-            <div className="flex items-start gap-3">
-              <span className="text-2xl">✉️</span>
-              <div>
-                <p className="font-semibold mb-1">Registration Successful!</p>
-                <p className="text-sm">
-                  Please check your email (<strong>{email}</strong>) and click the confirmation link to activate your account.
-                </p>
-                <p className="text-sm mt-2 text-green-600">
-                  Don't forget to check your spam folder!
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
@@ -150,7 +133,7 @@ export default function RegisterPage() {
 
           <button
             type="submit"
-            disabled={loading || success}
+            disabled={loading}
             className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? 'Creating account...' : 'Create Account'}
