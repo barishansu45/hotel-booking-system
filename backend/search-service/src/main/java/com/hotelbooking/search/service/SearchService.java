@@ -60,11 +60,11 @@ public class SearchService {
     }
 
     public List<HotelSearchResult> searchHotels(SearchRequest request, boolean isLoggedIn) {
-        log.info("Searching hotels for destination: {} (logged in: {})", request.getDestination(), isLoggedIn);
+        String destination = request != null ? request.getDestination() : "null";
+        log.info("=== searchHotels START === destination={}, isLoggedIn={}", destination, isLoggedIn);
 
         try {
             WebClient webClient = webClientBuilder.baseUrl(hotelServiceUrl).build();
-
             log.info("Calling hotel-service at: {}/hotels?page=0&size={}", hotelServiceUrl, hotelFetchSize);
 
             List<Map<String, Object>> allHotels = webClient.get()
@@ -77,19 +77,21 @@ public class SearchService {
                 .bodyToMono(Map.class)
                 .timeout(HTTP_TIMEOUT)
                 .map(response -> {
-                    log.info("Hotel-service responded, parsing response...");
+                    log.info("Hotel-service responded OK");
                     Object data = response.get("data");
                     if (data instanceof Map) {
                         Object content = ((Map<?, ?>) data).get("content");
                         if (content instanceof List) {
-                            return (List<Map<String, Object>>) content;
+                            List<Map<String, Object>> list = (List<Map<String, Object>>) content;
+                            log.info("Parsed {} hotels from response", list.size());
+                            return list;
                         }
                     }
-                    log.warn("Unexpected response structure: {}", response.keySet());
+                    log.warn("Unexpected response structure: keys={}", response.keySet());
                     return (List<Map<String, Object>>) List.<Map<String, Object>>of();
                 })
                 .onErrorResume(e -> {
-                    log.error("Failed to fetch hotels from hotel-service: {}", e.getMessage());
+                    log.error("Failed to fetch hotels from hotel-service: {} - {}", e.getClass().getSimpleName(), e.getMessage());
                     return Mono.just(List.of());
                 })
                 .block();
@@ -99,42 +101,28 @@ public class SearchService {
                 return List.of();
             }
 
-            log.info("Fetched {} hotels from hotel-service, filtering by destination: {}", allHotels.size(), request.getDestination());
-
-            // First filter by destination — this is cheap and reduces subsequent calls
+            // Filter by destination
             List<Map<String, Object>> matchingHotels = allHotels.stream()
                 .filter(hotel -> matchesDestination(hotel, request.getDestination()))
                 .collect(Collectors.toList());
 
-            log.info("Found {} hotels matching destination '{}'", matchingHotels.size(), request.getDestination());
+            log.info("Destination filter '{}': {} / {} hotels match", destination, matchingHotels.size(), allHotels.size());
 
-            boolean filterByStay =
-                request.getCheckInDate() != null
-                    && request.getCheckOutDate() != null
-                    && request.getCheckOutDate().isAfter(request.getCheckInDate());
+            // Build results — NO availability filtering at search time.
+            // Availability is checked at booking time only.
+            List<HotelSearchResult> results = matchingHotels.stream()
+                .map(hotel -> {
+                    HotelSearchResult result = buildResultWithoutRooms(hotel, isLoggedIn);
+                    cacheHotelDetails(result);
+                    return result;
+                })
+                .collect(Collectors.toList());
 
-            int guestCount = request.getGuests() != null && request.getGuests() > 0 ? request.getGuests() : 1;
-
-            // Process hotels in parallel using Flux
-            List<HotelSearchResult> results = Flux.fromIterable(matchingHotels)
-                .flatMap(hotel -> buildSearchResult(webClient, hotel, isLoggedIn, filterByStay,
-                        request.getCheckInDate(), request.getCheckOutDate(), guestCount),
-                    ROOM_FETCH_CONCURRENCY)
-                .filter(result -> result != null)
-                .filter(result -> !filterByStay || result.isHasAvailability())
-                .collectList()
-                .block(Duration.ofSeconds(60));
-
-            if (results == null) {
-                log.warn("Parallel hotel processing timed out or returned null");
-                return List.of();
-            }
-
-            log.info("Returning {} search results for destination '{}'", results.size(), request.getDestination());
+            log.info("=== searchHotels END === returning {} results", results.size());
             return results;
 
         } catch (Exception e) {
-            log.error("Error searching hotels: {}", e.getMessage(), e);
+            log.error("Error in searchHotels: {} - {}", e.getClass().getSimpleName(), e.getMessage(), e);
             return List.of();
         }
     }

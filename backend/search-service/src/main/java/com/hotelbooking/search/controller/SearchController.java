@@ -25,10 +25,16 @@ public class SearchController {
         
         // Check if user is authenticated (JWT filter sets userId attribute)
         boolean isLoggedIn = httpRequest.getAttribute("userId") != null;
-        log.info("Search request from {} user", isLoggedIn ? "authenticated" : "guest");
-        
-        List<HotelSearchResult> results = searchService.searchHotels(request, isLoggedIn);
-        return ResponseEntity.ok(results);
+        log.info("Search request from {} user, destination={}", isLoggedIn ? "authenticated" : "guest", request.getDestination());
+
+        try {
+            List<HotelSearchResult> results = searchService.searchHotels(request, isLoggedIn);
+            log.info("Search complete: {} results returned", results.size());
+            return ResponseEntity.ok(results);
+        } catch (Exception e) {
+            log.error("Search controller error: {}", e.getMessage(), e);
+            return ResponseEntity.ok(List.of());
+        }
     }
 
     @GetMapping("/{hotelId}")
