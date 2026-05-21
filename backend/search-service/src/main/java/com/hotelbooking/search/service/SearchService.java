@@ -307,7 +307,12 @@ public class SearchService {
 
         // Try to get from cache first
         String cacheKey = HOTEL_CACHE_PREFIX + hotelId;
-        HotelSearchResult cached = (HotelSearchResult) redisTemplate.opsForValue().get(cacheKey);
+        HotelSearchResult cached = null;
+        try {
+            cached = (HotelSearchResult) redisTemplate.opsForValue().get(cacheKey);
+        } catch (Exception e) {
+            log.warn("Redis unavailable, skipping cache read for hotel {}: {}", hotelId, e.getMessage());
+        }
 
         if (cached != null) {
             log.info("Hotel found in cache: {}", hotelId);
