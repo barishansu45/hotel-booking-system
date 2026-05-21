@@ -10,7 +10,10 @@ spring:
   
   data:
     redis:
-      url: ${REDIS_URL:redis://localhost:6379}
+      host: ${REDISHOST:localhost}
+      port: ${REDISPORT:6379}
+      password: ${REDISPASSWORD:}
+      username: ${REDISUSER:default}
       timeout: 60000ms
       ssl:
         enabled: ${REDIS_SSL:false}
