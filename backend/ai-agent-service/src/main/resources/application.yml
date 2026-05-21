@@ -15,6 +15,6 @@ app:
     model: ${OPENAI_MODEL:llama3-8b-8192}
     base-url: ${OPENAI_BASE_URL:https://api.groq.com/openai/v1}
   services:
-    search-service-url: ${SEARCH_SERVICE_URL:http://localhost:8082/api/v1}
-    booking-service-url: ${BOOKING_SERVICE_URL:http://localhost:8083/api/v1}
-    hotel-service-url: ${HOTEL_SERVICE_URL:http://localhost:8081/api/v1}
+    search-service-url: ${SEARCH_SERVICE_URL:https://hotel-booking-system-production-ce87.up.railway.app/api/v1}
+    booking-service-url: ${BOOKING_SERVICE_URL:https://hotel-booking-system-production-ce87.up.railway.app/api/v1}
+    hotel-service-url: ${HOTEL_SERVICE_URL:https://hotel-booking-system-production-ce87.up.railway.app/api/v1}
