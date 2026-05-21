@@ -1,6 +1,6 @@
 # Hotel Booking System
 
-> **SE 4458 — Software Architecture & Design | Group 1**  
+
 > A production-grade, microservices hotel booking platform built with Spring Boot 3 and Next.js 15.
 
 
@@ -420,7 +420,3 @@ All API calls go through the gateway: `https://hotel-booking-system-production-c
 Add a ~5-minute walkthrough (unlisted YouTube or Panopto): _TBD_
 
 ---
-
-## 📄 License
-
-Academic project — SE 4458 Software Architecture & Design, Spring 2025/26.
