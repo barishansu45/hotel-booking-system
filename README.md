@@ -3,22 +3,6 @@
 > **SE 4458 — Software Architecture & Design | Group 1**  
 > A production-grade, microservices hotel booking platform built with Spring Boot 3 and Next.js 15.
 
----
-
-## 👥 Team — Group 1
-
-| Name | Name |
-|------|------|
-| Barış Hansu | Batuhan Salcan |
-| Mustafa Berkay Düzenlı | Batıkan Akdeniz |
-| Cenk Serbest | Toprak Orman |
-| Ilayda Gün | Demir Demirdöğen |
-| Aycan Kurt | Ayfernaz Baygın |
-| Sümeyye Şencan | Begüm Bal |
-| Eren Karcı | Idil Balandı |
-| Berk Ateş | |
-
----
 
 ## 📐 Architecture Overview
 
