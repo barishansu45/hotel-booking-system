@@ -106,11 +106,11 @@ public class AiAgentService {
             aiResponse = callOpenAI(systemPrompt, userMessage);
 
             if (aiResponse == null || aiResponse.contains("having trouble connecting")) {
-                aiResponse = fallbackResponse(userMessage);
+                aiResponse = contextAwareFallback(userMessage, bookingNote, searchResults);
             }
         } catch (Exception e) {
             log.error("Error processing AI message, using fallback", e);
-            aiResponse = fallbackResponse(userMessage);
+            aiResponse = contextAwareFallback(userMessage, bookingNote, searchResults);
         }
 
         return ChatResponse.builder()
@@ -506,6 +506,61 @@ public class AiAgentService {
             log.error("OpenAI API error: {}", e.getMessage(), e);
             return null;
         }
+    }
+
+    private String contextAwareFallback(String userMessage, String bookingNote, JsonNode searchResults) {
+        // If booking was attempted, report its result directly
+        if (bookingNote != null && !bookingNote.isBlank()) {
+            if (bookingNote.contains("succeeded")) {
+                // Extract bookingId and price from the note
+                String bookingId = "";
+                String price = "";
+                java.util.regex.Matcher idM = java.util.regex.Pattern.compile("bookingId=([\\w-]+)").matcher(bookingNote);
+                java.util.regex.Matcher priceM = java.util.regex.Pattern.compile("totalPrice=([\\d.]+)").matcher(bookingNote);
+                if (idM.find()) bookingId = idM.group(1);
+                if (priceM.find()) price = priceM.group(1);
+                return String.format(
+                    "✅ Your booking is confirmed!\n\nBooking ID: %s\nTotal price: $%s\n\nYou can view your reservation in My Bookings. Logged-in members receive a 15%% discount.",
+                    bookingId.isEmpty() ? "N/A" : bookingId,
+                    price.isEmpty() ? "see My Bookings" : price);
+            }
+            if (bookingNote.contains("specify which hotel")) {
+                // Multiple hotels found, list them
+                StringBuilder sb = new StringBuilder("I found several hotels. Please specify the hotel name to complete the booking:\n\n");
+                if (searchResults != null && searchResults.isArray()) {
+                    int i = 1;
+                    for (JsonNode h : searchResults) {
+                        if (i > 5) break;
+                        sb.append(String.format("%d. **%s** — $%s/night\n", i++,
+                            h.path("name").asText("Hotel"),
+                            displayPrice(h)));
+                    }
+                }
+                sb.append("\nReply with the hotel name and your dates to book.");
+                return sb.toString();
+            }
+            if (bookingNote.contains("error") || bookingNote.contains("failed")) {
+                return "I found hotels for your search but was unable to complete the booking automatically. Please use the 'View Details' button on the hotel card and click 'Book Now' to complete your reservation.";
+            }
+        }
+
+        // If search returned results, list them
+        if (searchResults != null && searchResults.isArray() && !searchResults.isEmpty()) {
+            StringBuilder sb = new StringBuilder("Here are the available hotels:\n\n");
+            int limit = Math.min(5, searchResults.size());
+            for (int i = 0; i < limit; i++) {
+                JsonNode h = searchResults.get(i);
+                sb.append(String.format("• **%s** — %s — $%s/night\n",
+                    h.path("name").asText("Hotel"),
+                    h.path("city").asText(""),
+                    displayPrice(h)));
+            }
+            sb.append("\nTo book, say: \"Book [hotel name] from [check-in] to [check-out] for [N] guests\"");
+            return sb.toString();
+        }
+
+        // Generic fallback
+        return fallbackResponse(userMessage);
     }
 
     private String fallbackResponse(String userMessage) {
