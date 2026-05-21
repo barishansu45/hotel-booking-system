@@ -56,16 +56,16 @@ export default function MyBookingsPage() {
               const resp = await api.getHotelById(hid);
               const name = resp?.data?.name;
               if (name) names[hid] = name;
-              else names[hid] = 'Otel';
+              else names[hid] = 'Hotel';
             } catch {
-              names[hid] = 'Otel';
+              names[hid] = 'Hotel';
             }
           })
         );
         if (!cancelled) setHotelNames(names);
       } catch (e) {
         if (!cancelled) {
-          setError(e instanceof Error ? e.message : 'Liste yüklenemedi.');
+          setError(e instanceof Error ? e.message : 'Could not load bookings.');
           setBookings([]);
         }
       } finally {
@@ -81,7 +81,7 @@ export default function MyBookingsPage() {
   if (!initialized || !user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <p className="text-gray-600">Yükleniyor…</p>
+        <p className="text-gray-600">Loading…</p>
       </div>
     );
   }
@@ -95,7 +95,7 @@ export default function MyBookingsPage() {
             onClick={() => router.push('/')}
             className="text-blue-600 hover:text-blue-700 font-semibold"
           >
-            ← Ana sayfa
+            ← Home
           </button>
           <h1 className="text-lg font-bold text-gray-900">My Bookings</h1>
           <span className="w-24" />
@@ -103,7 +103,7 @@ export default function MyBookingsPage() {
       </header>
 
       <div className="container mx-auto px-4 py-8 max-w-3xl">
-        {loading && <p className="text-gray-600">Rezervasyonlar yükleniyor…</p>}
+        {loading && <p className="text-gray-600">Loading bookings…</p>}
         {error && (
           <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
             {error}
@@ -112,13 +112,13 @@ export default function MyBookingsPage() {
 
         {!loading && bookings.length === 0 && !error && (
           <div className="bg-white rounded-lg shadow p-8 text-center text-gray-600">
-            <p>Henüz kayıtlı rezervasyon yok.</p>
+            <p>No bookings yet.</p>
             <button
               type="button"
               onClick={() => router.push('/')}
               className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
             >
-              Otel ara
+              Search hotels
             </button>
           </div>
         )}
@@ -129,13 +129,13 @@ export default function MyBookingsPage() {
               <div className="flex flex-wrap justify-between gap-2">
                 <div>
                   <h2 className="text-xl font-semibold text-gray-900">
-                    {hotelNames[b.hotelId] || 'Otel'}
+                    {hotelNames[b.hotelId] || 'Hotel'}
                   </h2>
                   <p className="text-sm text-gray-500 mt-1">
-                    Giriş: {b.checkInDate} — Çıkış: {b.checkOutDate}
+                    Check-in: {b.checkInDate} — Check-out: {b.checkOutDate}
                   </p>
                   <p className="text-sm text-gray-600 mt-1">
-                    Misafir: {b.numGuests} · Durum:{' '}
+                    Guests: {b.numGuests} · Status:{' '}
                     <span className="font-medium text-green-700">{b.status}</span>
                   </p>
                 </div>
@@ -143,7 +143,7 @@ export default function MyBookingsPage() {
                   <p className="text-2xl font-bold text-blue-600">
                     ${Number(b.finalPrice).toFixed(2)}
                   </p>
-                  <p className="text-xs text-gray-500">toplam</p>
+                  <p className="text-xs text-gray-500">total</p>
                 </div>
               </div>
               <button
@@ -151,7 +151,7 @@ export default function MyBookingsPage() {
                 onClick={() => router.push(`/hotels/${b.hotelId}`)}
                 className="mt-4 text-sm text-blue-600 hover:underline"
               >
-                Otel detayı
+                Hotel details
               </button>
             </li>
           ))}

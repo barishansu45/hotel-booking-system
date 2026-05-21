@@ -113,7 +113,7 @@ export default function HotelDetailPage() {
     }
     if (!hotel) return;
     if (!selectedRoomId) {
-      alert('Bu otelde rezervasyon için oda bulunamadı.');
+      alert('No rooms available for booking at this hotel.');
       return;
     }
     if (!bookingForm.checkIn || !bookingForm.checkOut) {
@@ -122,12 +122,12 @@ export default function HotelDetailPage() {
     }
     const guestNum = parseInt(bookingForm.guests, 10);
     if (!Number.isFinite(guestNum) || guestNum < 1) {
-      alert('Misafir sayısı en az 1 olmalı.');
+      alert('Number of guests must be at least 1.');
       return;
     }
     const selectedRoom = rooms.find((r) => r.id === selectedRoomId);
     if (selectedRoom && guestNum > selectedRoom.maxGuests) {
-      alert(`Seçilen oda en fazla ${selectedRoom.maxGuests} misafir için uygun.`);
+      alert(`The selected room accommodates a maximum of ${selectedRoom.maxGuests} guests.`);
       return;
     }
     const nights = Math.max(
@@ -153,7 +153,7 @@ export default function HotelDetailPage() {
         totalPrice: total.toFixed(2),
         specialRequests: null,
       });
-      alert(`Rezervasyon kaydedildi: ${hotel.name}\nToplam: $${total.toFixed(2)}`);
+      alert(`Booking confirmed: ${hotel.name}\nTotal: $${total.toFixed(2)}`);
       router.push('/bookings');
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Rezervasyon başarısız.');
@@ -301,7 +301,7 @@ export default function HotelDetailPage() {
                     >
                       {rooms.map((r) => (
                         <option key={r.id} value={r.id}>
-                          {r.roomType} (en fazla {r.maxGuests} misafir)
+                          {r.roomType} (up to {r.maxGuests} guests)
                         </option>
                       ))}
                     </select>
@@ -359,7 +359,7 @@ export default function HotelDetailPage() {
                 onClick={() => void handleBooking()}
                 className="w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition"
               >
-                {bookingSubmitting ? 'Kaydediliyor…' : 'Book Now'}
+                {bookingSubmitting ? 'Saving…' : 'Book Now'}
               </button>
 
               {!user && (
