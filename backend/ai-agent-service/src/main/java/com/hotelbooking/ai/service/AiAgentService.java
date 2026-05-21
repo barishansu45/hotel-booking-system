@@ -393,9 +393,10 @@ public class AiAgentService {
     }
 
     private JsonNode pickHotel(JsonNode hotels, String nameHint) {
-        if (hotels.size() == 1) {
-            return hotels.get(0);
+        if (hotels.isEmpty()) {
+            return null;
         }
+        // If user mentioned a specific hotel name, prefer it
         if (nameHint != null && !nameHint.isBlank()) {
             String hlow = nameHint.toLowerCase(Locale.ROOT);
             for (JsonNode h : hotels) {
@@ -405,7 +406,13 @@ public class AiAgentService {
                 }
             }
         }
-        return null;
+        // Pick first hotel that has availability; fall back to first in list
+        for (JsonNode h : hotels) {
+            if (h.path("hasAvailability").asBoolean(true)) {
+                return h;
+            }
+        }
+        return hotels.get(0);
     }
 
     private JsonNode pickRoom(UUID hotelId, int guests) {
@@ -446,15 +453,18 @@ public class AiAgentService {
             You are a helpful hotel booking assistant. Your role is to:
             - Help users search for hotels
             - Provide information about hotel amenities and prices
-            - Assist with booking processes
+            - Complete bookings on behalf of the user when they request it
             - Answer questions about hotels and accommodations
 
             Key information:
-            - Logged-in users get 15% discount on all bookings (search may already show discounted prices)
-            - Users can filter by destination, dates, number of guests, and rating
+            - Logged-in users get 15% discount on all bookings
+            - To make a booking, the user must provide: destination, check-in date, check-out date
+            - If the user says "book", "reserve", or similar AND provides dates, a booking will be attempted automatically
+            - If "Booking API POST /bookings succeeded" appears in context, confirm the booking enthusiastically with the bookingId and price
+            - If "Booking API was not called" or "Booking API error" appears, explain what info is needed
 
-            When "Current search results" or booking API lines appear below, treat them as authoritative;
-            do not invent hotel names or prices that contradict them.
+            When "Current search results" appears below, use those hotel names and prices — do not invent hotels.
+            When booking context appears, summarize it clearly for the user.
 
             Be friendly, concise, and helpful. Keep responses under 150 words.
             """;

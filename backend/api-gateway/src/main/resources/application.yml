@@ -75,6 +75,13 @@ spring:
           filters:
             - RewritePath=/api/v1/(?<segment>.*), /api/v1/$\{segment}
 
+        - id: notification-service
+          uri: ${NOTIFICATION_SERVICE_URL:http://localhost:8085}
+          predicates:
+            - Path=/api/v1/notifications/**
+          filters:
+            - RewritePath=/api/v1/(?<segment>.*), /api/v1/$\{segment}
+
         - id: ai-agent-service
           uri: ${AI_AGENT_SERVICE_URL:http://localhost:8086}
           predicates:

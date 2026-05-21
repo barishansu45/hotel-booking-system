@@ -405,6 +405,32 @@ With the full stack running (`docker-compose up --build`):
 
 ---
 
+## 🌍 Deployed URLs (Railway)
+
+| Service | URL |
+|---------|-----|
+| **Frontend** | https://hotel-booking-system-production-1eab.up.railway.app |
+| **API Gateway** | https://hotel-booking-system-production-ce87.up.railway.app |
+| **Hotel Service** | https://hotel-booking-system-production-b701.up.railway.app |
+
+All API calls go through the gateway: `https://hotel-booking-system-production-ce87.up.railway.app/api/v1`
+
+---
+
+## 🧠 Design Decisions & Assumptions
+
+- **Authentication**: Supabase Auth used as the IAM service (replaces AWS Cognito). JWT tokens are validated by each service using the `SUPABASE_JWT_SECRET`.
+- **Admin Role**: Assigned via Supabase `app_metadata.role = "admin"`. No self-registration for admin — must be set manually in Supabase dashboard.
+- **15% Discount**: Applied at search-service level. Discounted price is pre-calculated and returned in the search response; frontend displays both the original and discounted price.
+- **Availability**: Admins set available room slots per date range via `/admin/availability`. Booking decrements `availableCapacity` for each date in the stay automatically.
+- **AI Booking**: The AI agent performs bookings end-to-end when the user provides destination + check-in + check-out dates. The agent calls `POST /search` then `POST /bookings` automatically. A hotel name hint can be mentioned to select a specific hotel from multiple results.
+- **Queue**: RabbitMQ (CloudAMQP) used for booking event notifications. Notification-service listens on the `new-reservations` queue and sends confirmation emails.
+- **Redis**: Search-service caches hotel details with a 1-hour TTL. Cache is bypassed gracefully on Redis unavailability.
+- **No payment**: As specified in requirements, no real payment transaction is processed.
+- **Coordinates**: Hotel coordinates in the database are seed data; some may not reflect real-world locations.
+
+---
+
 ## 📹 Demo Video
 
 Add a ~5-minute walkthrough (unlisted YouTube or Panopto): _TBD_

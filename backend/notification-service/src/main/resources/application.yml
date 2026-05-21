@@ -24,7 +24,7 @@ server:
 
 app:
   hotel-service:
-    url: ${HOTEL_SERVICE_URL:http://localhost:8081/api/v1}
+    url: ${HOTEL_SERVICE_URL:https://hotel-booking-system-production-b701.up.railway.app/api/v1}
   capacity:
     threshold-percentage: 20
     lookahead-days: 30
