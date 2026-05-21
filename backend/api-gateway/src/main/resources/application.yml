@@ -7,7 +7,12 @@ spring:
       globalcors:
         cors-configurations:
           '[/**]':
-            allowed-origins: ${ALLOWED_ORIGINS:https://hotel-booking-system-production-1eab.up.railway.app}
+            # ALLOWED_ORIGINS: Railway frontend servisinin URL'si olmalı (gateway URL'si değil!).
+            # Railway → api-gateway → Variables → ALLOWED_ORIGINS=https://<frontend-service>.up.railway.app
+            # Birden fazla origin için virgülle ayır: https://frontend.up.railway.app,https://custom-domain.com
+            allowed-origins:
+              - http://localhost:3000
+              - ${ALLOWED_ORIGINS:https://hotel-booking-system-production-1eab.up.railway.app}
             allowed-methods:
               - GET
               - POST
@@ -19,36 +24,57 @@ spring:
             allow-credentials: true
 
       routes:
-        - id: hotel-service
-          uri: https://hotel-booking-system-production-b701.up.railway.app
+        - id: hotel-service-hotels
+          uri: ${HOTEL_SERVICE_URL:http://localhost:8081}
           predicates:
-            - Path=/api/v1/hotels/**, /api/v1/rooms/**, /api/v1/availability/**, /api/v1/admin/**
+            - Path=/api/v1/hotels/**
+          filters:
+            - RewritePath=/api/v1/(?<segment>.*), /api/v1/$\{segment}
+
+        - id: hotel-service-rooms
+          uri: ${HOTEL_SERVICE_URL:http://localhost:8081}
+          predicates:
+            - Path=/api/v1/rooms/**
+          filters:
+            - RewritePath=/api/v1/(?<segment>.*), /api/v1/$\{segment}
+
+        - id: hotel-service-availability
+          uri: ${HOTEL_SERVICE_URL:http://localhost:8081}
+          predicates:
+            - Path=/api/v1/availability/**
+          filters:
+            - RewritePath=/api/v1/(?<segment>.*), /api/v1/$\{segment}
+
+        - id: hotel-service-admin
+          uri: ${HOTEL_SERVICE_URL:http://localhost:8081}
+          predicates:
+            - Path=/api/v1/admin/**
           filters:
             - RewritePath=/api/v1/(?<segment>.*), /api/v1/$\{segment}
 
         - id: search-service
-          uri: https://hotel-booking-system-production-4e37.up.railway.app
+          uri: ${SEARCH_SERVICE_URL:http://localhost:8082}
           predicates:
             - Path=/api/v1/search/**
           filters:
             - RewritePath=/api/v1/(?<segment>.*), /api/v1/$\{segment}
 
         - id: booking-service
-          uri: https://hotel-booking-system-production-b8ec.up.railway.app
+          uri: ${BOOKING_SERVICE_URL:http://localhost:8083}
           predicates:
             - Path=/api/v1/bookings/**
           filters:
             - RewritePath=/api/v1/(?<segment>.*), /api/v1/$\{segment}
 
         - id: comment-service
-          uri: https://hotel-booking-system-production-8c66.up.railway.app
+          uri: ${COMMENT_SERVICE_URL:http://localhost:8084}
           predicates:
             - Path=/api/v1/comments/**
           filters:
             - RewritePath=/api/v1/(?<segment>.*), /api/v1/$\{segment}
 
         - id: ai-agent-service
-          uri: https://hotel-booking-system-production-c7da.up.railway.app
+          uri: ${AI_AGENT_SERVICE_URL:http://localhost:8086}
           predicates:
             - Path=/api/v1/ai/**
           filters:

@@ -27,6 +27,13 @@ services:
     volumes:
       - mongo_data:/data/db
 
+  # RabbitMQ (booking events → notification-service)
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
   # Hotel Service
   hotel-service:
     build: ./backend/hotel-service
@@ -47,6 +54,7 @@ services:
     environment:
       HOTEL_SERVICE_URL: http://hotel-service:8081/api/v1
       REDIS_HOST: redis
+      ALLOWED_ORIGINS: http://localhost:3000
     depends_on:
       - redis
       - hotel-service
@@ -61,11 +69,11 @@ services:
       DATABASE_USERNAME: postgres
       DATABASE_PASSWORD: postgres
       HOTEL_SERVICE_URL: http://hotel-service:8081/api/v1
-      NOTIFICATION_WEBHOOK_URL: http://notification-service:8085/api/v1/notifications/inbound/booking
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
     depends_on:
       - postgres
       - hotel-service
-      - notification-service
+      - rabbitmq
 
   # Notification Service (PDF: nightly capacity + reservation events)
   notification-service:
@@ -74,8 +82,10 @@ services:
       - "8085:8085"
     environment:
       HOTEL_SERVICE_URL: http://hotel-service:8081/api/v1
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
     depends_on:
       - hotel-service
+      - rabbitmq
 
   # Comment Service
   comment-service:
@@ -114,6 +124,7 @@ services:
       BOOKING_SERVICE_URL: http://booking-service:8083
       COMMENT_SERVICE_URL: http://comment-service:8084
       AI_AGENT_SERVICE_URL: http://ai-agent-service:8086
+      ALLOWED_ORIGINS: http://localhost:3000
     depends_on:
       - hotel-service
       - search-service

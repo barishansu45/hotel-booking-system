@@ -105,34 +105,61 @@ public class SearchService {
      * then falls back to unfiltered paginated fetch.
      */
     private List<Map<String, Object>> fetchHotelsFromService(WebClient webClient, String destination) {
-        // Try city filter first — much faster than fetching all and filtering in memory
+        // Strategy 1: city path endpoint — /hotels/city/{city}?page=0&size=N (fastest, DB-level filter)
         if (destination != null && !destination.trim().isEmpty()) {
+            String encoded = destination.trim();
             List<Map<String, Object>> cityResults = webClient.get()
                 .uri(uriBuilder -> uriBuilder
-                    .path("/hotels")
+                    .path("/hotels/city/{city}")
                     .queryParam("page", 0)
                     .queryParam("size", hotelFetchSize)
-                    .queryParam("city", destination)
-                    .build())
+                    .build(encoded))
                 .retrieve()
+                .onStatus(status -> status.is4xxClientError() || status.is5xxServerError(),
+                    resp -> Mono.empty())
                 .bodyToMono(Map.class)
                 .timeout(HTTP_TIMEOUT)
-                .map(r -> extractContent(r))
+                .map(r -> r != null ? extractContent(r) : List.<Map<String,Object>>of())
                 .onErrorResume(e -> {
-                    log.warn("City-filtered hotel fetch failed ({}), will try unfiltered", e.getMessage());
+                    log.warn("City endpoint failed ({}), will try keyword search", e.getMessage());
                     return Mono.just(List.of());
                 })
                 .block();
 
-            // If we got results with city filter, use them
             if (cityResults != null && !cityResults.isEmpty()) {
-                log.info("City-filtered fetch returned {} hotels for '{}'", cityResults.size(), destination);
+                log.info("City endpoint returned {} hotels for '{}'", cityResults.size(), destination);
                 return cityResults;
             }
-            log.info("City filter returned 0 results for '{}', falling back to full fetch", destination);
+
+            // Strategy 2: keyword search — /hotels/search?keyword={destination}
+            log.info("City endpoint returned 0 for '{}', trying keyword search", destination);
+            List<Map<String, Object>> keywordResults = webClient.get()
+                .uri(uriBuilder -> uriBuilder
+                    .path("/hotels/search")
+                    .queryParam("keyword", destination)
+                    .queryParam("page", 0)
+                    .queryParam("size", hotelFetchSize)
+                    .build())
+                .retrieve()
+                .onStatus(status -> status.is4xxClientError() || status.is5xxServerError(),
+                    resp -> Mono.empty())
+                .bodyToMono(Map.class)
+                .timeout(HTTP_TIMEOUT)
+                .map(r -> r != null ? extractContent(r) : List.<Map<String,Object>>of())
+                .onErrorResume(e -> {
+                    log.warn("Keyword search failed ({}), will try full fetch", e.getMessage());
+                    return Mono.just(List.of());
+                })
+                .block();
+
+            if (keywordResults != null && !keywordResults.isEmpty()) {
+                log.info("Keyword search returned {} hotels for '{}'", keywordResults.size(), destination);
+                return keywordResults;
+            }
+            log.info("Keyword search also returned 0 for '{}', falling back to full fetch", destination);
         }
 
-        // Fallback: fetch first page without filter, then match in memory
+        // Strategy 3 (fallback): fetch first page unfiltered, filter in memory
         List<Map<String, Object>> allHotels = webClient.get()
             .uri(uriBuilder -> uriBuilder
                 .path("/hotels")
@@ -142,16 +169,15 @@ public class SearchService {
             .retrieve()
             .bodyToMono(Map.class)
             .timeout(HTTP_TIMEOUT)
-            .map(r -> extractContent(r))
+            .map(r -> r != null ? extractContent(r) : List.<Map<String,Object>>of())
             .onErrorResume(e -> {
-                log.error("Hotel-service fetch failed: {} - {}", e.getClass().getSimpleName(), e.getMessage());
+                log.error("All hotel fetch strategies failed: {} - {}", e.getClass().getSimpleName(), e.getMessage());
                 return Mono.just(List.of());
             })
             .block();
 
-        if (allHotels != null) {
-            log.info("Unfiltered fetch returned {} hotels", allHotels.size());
-        }
+        int count = allHotels != null ? allHotels.size() : 0;
+        log.info("Unfiltered fetch returned {} hotels", count);
         return allHotels != null ? allHotels : List.of();
     }
 

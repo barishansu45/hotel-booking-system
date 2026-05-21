@@ -3,9 +3,10 @@ FROM node:20-alpine AS build
 WORKDIR /app
 
 # Build-time env vars (NEXT_PUBLIC_* must be available during `next build`)
-# Override with: docker build --build-arg NEXT_PUBLIC_API_URL=https://your-gateway.azurewebsites.net/api/v1 ...
-ARG NEXT_PUBLIC_API_URL=http://localhost:8080/api/v1
-ARG NEXT_PUBLIC_AI_API_URL=http://localhost:8080/api/v1/ai
+# Override with: docker build --build-arg NEXT_PUBLIC_API_URL=https://your-gateway.up.railway.app/api/v1 ...
+# Railway: set these as Build Variables in the frontend service → Variables tab.
+ARG NEXT_PUBLIC_API_URL=https://hotel-booking-system-production-ce87.up.railway.app/api/v1
+ARG NEXT_PUBLIC_AI_API_URL=https://hotel-booking-system-production-ce87.up.railway.app/api/v1/ai
 ARG NEXT_PUBLIC_SUPABASE_URL
 ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
 
