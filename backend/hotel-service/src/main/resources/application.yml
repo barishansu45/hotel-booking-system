@@ -58,7 +58,7 @@ logging:
 
 app:
   cors:
-    allowed-origins: ${ALLOWED_ORIGINS:http://localhost:3000,http://localhost:3001,http://localhost:3002,http://localhost:3003}
+    allowed-origins: ${ALLOWED_ORIGINS:http://localhost:3000,http://localhost:3001,http://localhost:3002,http://localhost:3003,https://hotel-booking-system-production-1eab.up.railway.app}
   supabase:
     url: ${SUPABASE_URL:https://nqpknjbjcphiiusirzlg.supabase.co}
     jwt-secret: ${SUPABASE_JWT_SECRET:}

@@ -58,4 +58,5 @@ public class HotelDTO {
     private Integer totalRooms;
     private BigDecimal averageRating;
     private Integer totalReviews;
+    private BigDecimal minPrice;
 }

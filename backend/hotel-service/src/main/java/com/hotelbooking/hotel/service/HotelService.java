@@ -128,7 +128,8 @@ public class HotelService {
 
     private HotelDTO mapToDTO(Hotel hotel) {
         long totalRooms = roomRepository.countByHotelIdAndIsActiveTrue(hotel.getId());
-        
+        java.math.BigDecimal minPrice = roomRepository.findMinBasePriceByHotelId(hotel.getId());
+
         return HotelDTO.builder()
                 .id(hotel.getId())
                 .name(hotel.getName())
@@ -148,6 +149,7 @@ public class HotelService {
                 .createdAt(hotel.getCreatedAt())
                 .updatedAt(hotel.getUpdatedAt())
                 .totalRooms((int) totalRooms)
+                .minPrice(minPrice)
                 .build();
     }
 }

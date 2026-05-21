@@ -29,4 +29,7 @@ public interface RoomRepository extends JpaRepository<Room, UUID> {
                                           @Param("maxPrice") Double maxPrice);
 
     long countByHotelIdAndIsActiveTrue(UUID hotelId);
+
+    @Query("SELECT MIN(r.basePrice) FROM Room r WHERE r.hotel.id = :hotelId AND r.isActive = true")
+    java.math.BigDecimal findMinBasePriceByHotelId(@Param("hotelId") UUID hotelId);
 }
