@@ -81,6 +81,15 @@ public class AiAgentService {
         JsonNode searchResults = null;
         if (intent.destination != null && !intent.destination.isBlank()) {
             searchResults = invokeSearchApi(buildSearchBody(intent), authorizationHeader);
+            // If date-filtered search returns no results, retry without dates
+            if ((searchResults == null || !searchResults.isArray() || searchResults.isEmpty())
+                    && (intent.checkIn != null || intent.checkOut != null)) {
+                log.info("No results for date range, retrying without date filter");
+                Map<String, Object> noDateBody = buildSearchBody(intent);
+                noDateBody.remove("checkInDate");
+                noDateBody.remove("checkOutDate");
+                searchResults = invokeSearchApi(noDateBody, authorizationHeader);
+            }
             apiContext = formatSearchBlock(searchResults);
         }
 
