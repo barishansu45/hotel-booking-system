@@ -417,6 +417,6 @@ All API calls go through the gateway: `https://hotel-booking-system-production-c
 
 ## 📹 Demo Video
 
-Add a ~5-minute walkthrough (unlisted YouTube or Panopto): _TBD_
+https://youtu.be/cDJpLrN1Lz0
 
 ---
